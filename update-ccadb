@@ -4,7 +4,7 @@
 # update-ccadb.py - a script to download and commit to system trust the CCADB
 
 # Prints extraneous debuging info and sest DESTDIR to './dest' by default
-debug = True
+debug = False
 
 import datetime
 import os
@@ -30,8 +30,6 @@ SED     = "/usr/bin/sed" # May not be needed
 TRUST   = "/usr/bin/trust"
 
 # Destination configuration
-CONFDIR    = "/etc/make-ca"
-CONFILE    = CONFDIR + "/make-ca.conf"
 PKIDIR     = DESTDIR + "/etc/pki"
 SSLDIR     = DESTDIR + "/etc/ssl"
 ANCHORDIR  = PKIDIR + "/anchors"
@@ -51,7 +49,7 @@ SMURL = "https://ccadb-public.secure.force.com/mozilla/IncludedRootsPEMTxt?Trust
 SAURL = "https://ccadb-public.secure.force.com/mozilla/IncludedRootsPEMTxt?TrustBitsInclude=Websites"
 
 # Create a temporary working directory
-TEMPDIR = tempfile.mkdtemp(prefix="tmp.make-ca.")
+TEMPDIR = tempfile.mkdtemp(prefix="tmp.ccadb.")
 
 # Create default ssl context with MOZZILA_CA_ROOT as the only CA
 context = ssl.create_default_context()
@@ -299,3 +297,9 @@ if DESTDIR == '':
 
 else:
   print("\n\033[93mWarning\033[0m: Not updating 3rd party bundles when destdir is not empty.\n")
+
+if debug == False:
+  # Clean up the temp directory
+  shutil.rmtree(TEMPDIR)
+
+
