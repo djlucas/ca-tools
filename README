@@ -1,0 +1,23 @@
+ca-tools provides utilities to deliver and manage a complete PKI configuration
+for workstations and servers using only standard Unix utilities, OpenSSL,
+p11-kit, and Python-3.
+
+The update-certdata utility will check the existng local version of
+certdata.txt against the version in Mozzila's HG instance for NSS, and if
+necessary, download and install an updated version. It will then proceed to
+populate the P11-kit trust anchors using Mozilla's trust arguments.
+Additionally, if any p11-kit format files are in place in the local directory,
+they will overwrite those taken from the Mozilla store.
+
+The update-ccadb utility will download the latest version of certificate
+bundles from the Common CA Database managed by Mozilla, Microsoft, and Google.
+It will then proceed to populate the P11-kit trust anchors using the trust
+values for the bundles downloaded. Additionally, if any p11-kit format files
+are in place in the local directory, they will overwrite those taken from the
+CCADB bundles.
+
+The add-local-trust utility will take a PEM formatted CA Root and convert to
+a P11-Kit formatted file and place into a local directory with the trust bit
+selected by the user. These files will later override trust in the above two
+certificate sources.
+
