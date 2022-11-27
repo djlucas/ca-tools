@@ -4,7 +4,7 @@
 # add-local-cert - a script to convert local PEM formatted cefticicates to p11-kit fomrat
 
 # Prints extraneous debuging info and sest DESTDIR to './dest' by default
-debug = True
+debug = False
 
 import os
 import argparse
