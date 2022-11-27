@@ -30,6 +30,7 @@ SED     = "/usr/bin/sed" # May not be needed
 TRUST   = "/usr/bin/trust"
 
 # Destination configuration
+CONFDIR    = "/etc/make-ca"
 PKIDIR     = DESTDIR + "/etc/pki"
 SSLDIR     = DESTDIR + "/etc/ssl"
 ANCHORDIR  = PKIDIR + "/anchors"
@@ -296,7 +297,7 @@ if DESTDIR == '':
   print("Done!")
 
 else:
-  print("\n\033[93mWarning\033[0m: Not updating 3rd party bundles when destdir is not empty.\n")
+  print("\n\033[93mWarning\033[0m: Not updating 3rd party bundles when DESTDIR is not empty.\n")
 
 if debug == False:
   # Clean up the temp directory
