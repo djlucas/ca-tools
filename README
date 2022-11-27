@@ -17,7 +17,7 @@ are in place in the local directory, they will overwrite those taken from the
 CCADB bundles.
 
 The add-local-trust utility will take a PEM formatted CA Root and convert to
-a P11-Kit formatted file and place into a local directory with the trust bit
+a P11-Kit formatted file and place into the local directory with trust values
 selected by the user. These files will later override trust in the above two
 certificate sources.
 
