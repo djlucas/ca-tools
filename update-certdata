@@ -23,7 +23,7 @@
 # USA.
 
 # Prints extraneous debuging info and sest DESTDIR to './dest' by default
-debug = True
+debug = False
 
 import base64
 import os
@@ -138,9 +138,15 @@ else:
     os.rename(OLDCERTDATA, OLDCERTDATA + ".old")
   os.rename(TEMPDIR + "/certdata.txt", OLDCERTDATA)
 
-
 def printable_serial(obj):
   return ".".join([str(x) for x in obj['CKA_SERIAL_NUMBER']])
+
+# Before we populate it, we need to clear out ANCHORDIR
+for p11file in os.listdir(ANCHORDIR):
+  if debug == True:
+    print("Checking file: %s" % (os.path.join(ANCHORDIR, p11file)))
+  if p11file.endswith(".p11-kit"):
+    os.remove(os.path.join(ANCHORDIR, p11file))
 
 # Dirty file parser.
 in_data, in_multiline, in_obj = False, False, False

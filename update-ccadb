@@ -214,6 +214,13 @@ os.makedirs(KEYSTORE, mode = 0o755, exist_ok = True)
 os.makedirs(NSSDB, mode = 0o755, exist_ok = True)
 os.makedirs(LOCALDIR, mode = 0o755, exist_ok = True)
 
+# Before we populate it, we need to clear out ANCHORDIR
+for p11file in os.listdir(ANCHORDIR):
+  if debug == True:
+    print("Checking file: %s" % (os.path.join(ANCHORDIR, p11file)))
+  if p11file.endswith(".p11-kit"):
+    os.remove(os.path.join(ANCHORDIR, p11file))
+
 # For each certificate in each of the three stores
 # mate to other trusts and create p11-kit files
 sadir = r'' + TEMPDIR + "/sa"
