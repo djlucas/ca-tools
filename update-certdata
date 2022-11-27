@@ -23,7 +23,7 @@
 # USA.
 
 # Prints extraneous debuging info and sest DESTDIR to './dest' by default
-debug = False
+debug = True
 
 import base64
 import os
@@ -51,6 +51,8 @@ SED = "/usr/bin/sed"
 TRUST = "/usr/bin/trust"
 
 # Destination configuration
+CONFIGDIR = "/etc/make-ca"
+CERTDATA = "certdata.txt"
 PKIDIR = DESTDIR + "/etc/pki"
 SSLDIR = DESTDIR + "/etc/ssl"
 ANCHORDIR = PKIDIR + "/anchors"
@@ -73,15 +75,16 @@ SRCDAT = SRCURL.replace("raw-file", "log")
 PROXY = ''
 
 # Create a temporary directory
-TMPDIR = tempfile.mkdtemp()
+TEMPDIR = tempfile.mkdtemp(prefix="tmp.certdata.")
 if debug == True:
-  print("Temp Directory is: %s" % (TMPDIR))
+  print("Temp Directory is: %s" % (TEMPDIR))
 
 # Make sure destination directories exist
 os.makedirs(ANCHORDIR, mode = 0o755, exist_ok = True)
 os.makedirs(BUNDLEDIR, mode = 0o755, exist_ok = True)
 os.makedirs(CERTDIR, mode = 0o755, exist_ok = True)
 os.makedirs(JAVADIR, mode = 0o755, exist_ok = True)
+os.makedirs(LOCALDIR, mode = 0o755, exist_ok = True)
 
 # Get hg revision of existing certdata.txt
 if os.path.isfile(OLDCERTDATA):
@@ -103,7 +106,7 @@ context.load_verify_locations(cafile=MOZILLA_CA_ROOT)
 
 # Get the revision directly from hg
 certdatalogdl = urllib.request.urlopen(SRCDAT, data=None, context=context)
-certdatalogfn = TMPDIR + "/certdata.txt.log"
+certdatalogfn = TEMPDIR + "/certdata.txt.log"
 certdatalogbytes = certdatalogdl.read()
 certdatalogtext = certdatalogbytes.decode('utf-8')
 savelogfile = open(certdatalogfn, 'w')
@@ -125,7 +128,7 @@ if oldrev == newrev:
 else:
   print("Downloading updated certdata.txt...")
   certdatadl = urllib.request.urlopen(SRCURL, data=None, context=context)
-  certdatafn = TMPDIR + "/certdata.txt"
+  certdatafn = TEMPDIR + "/certdata.txt"
   certdatabytes = certdatadl.read()
   certdatatext = certdatabytes.decode('utf-8')
   savefile = open(certdatafn, 'w')
@@ -133,7 +136,7 @@ else:
   savefile.close()
   if oldrev != '':
     os.rename(OLDCERTDATA, OLDCERTDATA + ".old")
-  os.rename(TMPDIR + "/certdata.txt", OLDCERTDATA)
+  os.rename(TEMPDIR + "/certdata.txt", OLDCERTDATA)
 
 
 def printable_serial(obj):
@@ -353,7 +356,7 @@ for tobj in objects:
             f.close()
 
             if 'CKA_TRUST_SERVER_AUTH' in tobj or 'CKA_TRUST_EMAIL_PROTECTION' in tobj or 'CKA_TRUST_CODE_SIGNING' in tobj:
-                legacy_fname = TMPDIR + "/" + "legacy-disable/" + fname + ".crt"
+                legacy_fname = TEMPDIR + "/" + "legacy-disable/" + fname + ".crt"
                 f = open(legacy_fname, 'w')
                 f.write("# alias=%s\n"%tobj['CKA_LABEL'])
                 f.write("# trust=" + " ".join(trustbits) + "\n")
@@ -371,7 +374,7 @@ for tobj in objects:
         cert_comment = ''
         if obj != None:
             # must extract the public key from the cert, let's use openssl
-            cert_fname = TMPDIR + "/" + "cert-" + fname
+            cert_fname = TEMPDIR + "/" + "cert-" + fname
             fc = open(cert_fname, 'w')
             fc.write("-----BEGIN CERTIFICATE-----\n")
             temp_encoded_b64 = base64.b64encode(obj['CKA_VALUE'])
@@ -379,7 +382,7 @@ for tobj in objects:
             fc.write("\n".join(temp_wrapped))
             fc.write("\n-----END CERTIFICATE-----\n")
             fc.close();
-            pk_fname = TMPDIR + "/" + "pubkey-" + fname
+            pk_fname = TEMPDIR + "/" + "pubkey-" + fname
             fpkout = open(pk_fname, "w")
             dump_pk_command = [OPENSSL, "x509", "-in", cert_fname, "-noout", "-pubkey"]
             subprocess.call(dump_pk_command, stdout=fpkout)
@@ -387,7 +390,7 @@ for tobj in objects:
             with open (pk_fname, "r") as myfile:
                 pk=myfile.read()
             # obtain certificate information suitable as a comment
-            comment_fname = TMPDIR + "/" + "comment-" + fname
+            comment_fname = TEMPDIR + "/" + "comment-" + fname
             fcout = open(comment_fname, "w")
             comment_command = [OPENSSL, "x509", "-in", cert_fname, "-noout", "-text"]
             subprocess.call(comment_command, stdout=fcout)
@@ -534,6 +537,20 @@ for tobj in objects:
         odt = ', '.join(openssl_distrustflags)
         print("Added to p11-kit anchor directory with the following trust bits:\n  Mozilla Trust:     %s\n  OpenSSL Trust:     %s\n  Mozilla Distrust:  %s\n  OpenSSL Distrust:  %s\n\n" % (t, ot, dt, odt))
 
+# Process any local pem files
+for pem in os.scandir(LOCALDIR):
+  # provide a warning for files that end specifically with .pem
+  if pem.name.endswith(".pem"):
+    print("\n\033[93mWarning\033[0m: PEM format files are no longer supported in %s!" % (LOCALDIR))
+    print("Skipping %s!" % (pem.name))
+    print("Please convert the file to P11-Kit format using the \033[94madd-local-trust\033[0m utility.\n")
+  if pem.name.endswith(".p11-kit"):
+    print("\nCopying local trust file %s to the trust store." % (pem.name))
+    shutil.copyfile(pem, ANCHORDIR + os.path.basename(pem))
+  elif not pem.name.endswith(".pem"):
+    print("\n\033[91mError\033[0m: Only P11-Kit format files are supported!")
+    print("Skipping %s!" % (pem.name))
+
 # Only create the bundles if on a real system, else the generated files
 # will use the real trust directory, not our newly created one
 if DESTDIR == '':
@@ -568,7 +585,7 @@ if DESTDIR == '':
   print("Done!")
 
 else:
-  print("\n\033[93mWarning\033[0m: Not updating 3rd party bundles when destdir is not empty.\n")
+  print("\n\033[93mWarning\033[0m: Not updating 3rd party bundles when DESTDIR is not empty.\n")
 
 if debug == False:
   # Clean up the temp directory
