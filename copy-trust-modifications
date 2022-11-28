@@ -1,0 +1,47 @@
+#!/bin/bash
+
+#Use defaults if make-ca.conf does not exist
+ALT="/usr/sbin/add-local-trust"
+ANCHORDIR="/etc/pki/anchors"
+ANCHORLIST="/etc/pki/anchors.md5sums"
+LOCALDIR="/etc/ssl/local"
+MD5SUM="/usr/bin/md5sum"
+OPENSSL="/usr/bin/openssl"
+
+# Dump to a temporary directory
+TEMPDIR=`mktemp -d`
+/usr/bin/trust extract --filter=certificates \
+                       --format=openssl-directory \
+                       --overwrite \
+                       "${TEMPDIR}"
+
+# Create a list of anchors that were not present or have been modified
+"${MD5SUM}" "${ANCHORDIR}"/* \
+    2> /dev/null > "${TEMPDIR}/anchors.md5sums"
+diff -au "${ANCHORLIST}" "${TEMPDIR}/anchors.md5sums" \
+    2> /dev/null > "${TEMPDIR}/diff" 
+grep "^+[a-z,0-9]" "${TEMPDIR}/diff" | cut -d " " -f 3 | \
+    sed '/x-certificate-extension/d' 2> /dev/null > "${TEMPDIR}/certlist"
+
+echo -e "\nThe following certificates have local modifications:\n"
+
+# Copy new certificates to LOCALDIR
+for certificate in `cat "${TEMPDIR}/certlist"` ; do
+    echo "${certificate}"
+    if [ echo "${certificate}" | grep "\.p11-kit" > /dev/null 2>&1 ]; then
+        HASH=`${OPENSSL} x509 -in ${certificate} -hash -noout`
+        # Place directly into LOCALDIR
+        cp "${certificate}" "${LOCALDIR}/${HASH}.p11-kit"
+    elif [ echo "${certificate}" | grep "\.pem" > /dev/null 2>&1 ]; then
+        HASH=`"${OPENSSL}" x509 -in ${certificate} -hash -noout`
+	# Place into LOCALDIR via add-local-trust
+	"${ALT}" "${certificate}"
+    fi
+    unset HASH
+done
+echo ""
+
+# Clean up
+rm -rf "${TEMPDIR}"
+unset ANCHORDIR ANCHORLIST LOCALDIR MD5SUM OPENSSL TEMPDIR certificate
+
