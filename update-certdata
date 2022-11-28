@@ -47,15 +47,17 @@ if DESTDIR is None:
     DESTDIR = './dest'
 
 # Do not depend on path, provide them in the config file if not correct
+MD5SUM  = "/usr/bin/md5sum"
 OPENSSL = "/usr/bin/openssl"
-SED = "/usr/bin/sed"
-TRUST = "/usr/bin/trust"
+SED     = "/usr/bin/sed"
+TRUST   = "/usr/bin/trust"
 
 # Destination configuration
 CERTDATA = "certdata.txt"
 PKIDIR = DESTDIR + "/etc/pki"
 SSLDIR = DESTDIR + "/etc/ssl"
 ANCHORDIR = PKIDIR + "/anchors"
+ANCHORLIST = PKIDIR + "/anchors.md5sums"
 BUNDLEDIR = PKIDIR + "/tls/certs"
 CABUNDLE = BUNDLEDIR + "/ca-bundle.crt"
 SMBUNDLE = BUNDLEDIR + "/email-ca-bundle.crt"
@@ -557,6 +559,18 @@ for pem in os.scandir(LOCALDIR):
   elif not pem.name.endswith(".pem"):
     print("\n\033[91mError\033[0m: Only P11-Kit format files are supported!")
     print("Skipping %s!" % (pem.name))
+
+# Create an md5sum list of certificates - this is used to make sure
+# that any certificates adding using the native trust utility also get
+# added to the local directory
+md5text = ''
+for file in os.scandir(ANCHORDIR):
+  if file.name.endswith(".p11-kit"):
+    md5cmd = [MD5SUM, os.path.join(ANCHORDIR, file.name)]
+    md5text += subprocess.check_output(md5cmd).decode('utf-8').strip() + "\n"
+anchorlist_write = open(ANCHORLIST, 'w')
+anchorlist_write.write(md5text.replace(DESTDIR, ''))
+anchorlist_write.close()
 
 # Only create the bundles if on a real system, else the generated files
 # will use the real trust directory, not our newly created one
