@@ -30,7 +30,6 @@ SED     = "/usr/bin/sed" # May not be needed
 TRUST   = "/usr/bin/trust"
 
 # Destination configuration
-CONFDIR    = "/etc/make-ca"
 PKIDIR     = DESTDIR + "/etc/pki"
 SSLDIR     = DESTDIR + "/etc/ssl"
 ANCHORDIR  = PKIDIR + "/anchors"
@@ -44,7 +43,8 @@ JAVADIR    = PKIDIR + "/tls/java"
 KEYSTORE   = JAVADIR + "/cacerts"
 NSSDB      = PKIDIR + "/nssdb"
 LOCALDIR   = SSLDIR + "/local"
-MOZCA      = CONFDIR + "/mozilla-ca-root.pem"
+LIBEXECDIR = "/usr/libexec/ca-tools"
+MOZCA      = LIBEXECDIR + "/mozilla-ca-root.pem"
 CSURL = "https://ccadb-public.secure.force.com/microsoft/IncludedRootsPEMTxtForMSFT?MicrosoftEKUs=Code%20Signing"
 SMURL = "https://ccadb-public.secure.force.com/mozilla/IncludedRootsPEMTxt?TrustBitsInclude=Email"
 SAURL = "https://ccadb-public.secure.force.com/mozilla/IncludedRootsPEMTxt?TrustBitsInclude=Websites"
