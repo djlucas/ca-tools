@@ -210,7 +210,7 @@ dump_certs('cs', csfile)
 os.makedirs(ANCHORDIR, mode = 0o755, exist_ok = True)
 os.makedirs(BUNDLEDIR, mode = 0o755, exist_ok = True)
 os.makedirs(CERTDIR, mode = 0o755, exist_ok = True)
-os.makedirs(KEYSTORE, mode = 0o755, exist_ok = True)
+os.makedirs(JAVADIR, mode = 0o755, exist_ok = True)
 os.makedirs(NSSDB, mode = 0o755, exist_ok = True)
 os.makedirs(LOCALDIR, mode = 0o755, exist_ok = True)
 
@@ -292,8 +292,8 @@ if DESTDIR == '':
   print("Done!")
 
   # Create GNUTLS bundle file
-  print("Extracting GNUTLS server auth certificates to:\n%s..." % (CABUNDLE), end='')
-  create_GBF = [TRUST, "extract", "--filter=ca-anchors", "--format=pem-bundle", "--purpose", "server-auth", "--overwrite", "--comment", CABUNDLE]
+  print("Extracting GNUTLS server auth certificates to:\n%s..." % (SABUNDLE), end='')
+  create_GBF = [TRUST, "extract", "--filter=ca-anchors", "--format=pem-bundle", "--purpose", "server-auth", "--overwrite", "--comment", SABUNDLE]
   subprocess.run(create_GBF, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
   print("Done!")
 
