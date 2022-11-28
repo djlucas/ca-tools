@@ -21,3 +21,30 @@ a P11-Kit formatted file and place into the local directory with trust values
 selected by the user. These files will later override trust in the above two
 certificate sources.
 
+A p11-kit helper, copy-trust-modifications, is included for use in p11-kit's
+trust-extract-compat script (which should be symlinked to the user's path as
+update-ca-certificates). Manual creation of OpenSSL Trusted certificates is no
+longer required for general use. Instead, import the certificate using
+p11-kit's 'trust anchor --store /path/to/certificate.crt' functionality.
+This will recreate the individual stores assigning approriate permissions to
+the newly added anchor(s). Additionally, a copy of any newly added anchors will
+be placed into $LOCALDIR for future use.
+
+For the p11-kit distro hook, remove the "not configured" and "exit 1" lines
+from trust/trust-extract-compat, and append the following (substitute
+update-certdata if you are still using certdata.txt instead of CCADB):
+===============================================================================
+# Copy existing modifications to local store
+/usr/libexec/ca-tools/copy-trust-modifications
+
+# Update trust stores
+/usr/sbin/update-ccadb
+===============================================================================
+
+If you wish to distribute the results of this script as a standalone package,
+unlike in the BLFS distribution for which it was originally written, where the
+end user is ultimately responsible for the content, you, as the distributor, are
+taking ownership for the results. You are strongly encouraged to define a
+written inclusion policy, distribute all blacklisted files as a part of the
+local directory, and to provide the written policy in the distributed package.
+
