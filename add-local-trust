@@ -1,4 +1,4 @@
-#!/usb/bin/python3
+#!/usr/bin/python3
 # vim:set et sw=4:
 #
 # add-local-cert - a script to convert local PEM formatted cefticicates to p11-kit fomrat

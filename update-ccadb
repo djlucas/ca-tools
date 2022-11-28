@@ -1,4 +1,4 @@
-#!/usb/bin/python3
+#!/usr/bin/python3
 # vim:set et sw=4:
 #
 # update-ccadb - download CCADB and apply to system trust
