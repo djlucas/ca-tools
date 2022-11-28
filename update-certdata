@@ -28,13 +28,14 @@ debug = False
 import base64
 import os
 import re
+import shutil
 import ssl
+import subprocess
 import sys
 import tempfile
 import textwrap
 import time
 import urllib.request, urllib.parse, urllib.error
-import subprocess
 
 objects = []
 
@@ -51,7 +52,6 @@ SED = "/usr/bin/sed"
 TRUST = "/usr/bin/trust"
 
 # Destination configuration
-CONFIGDIR = "/etc/make-ca"
 CERTDATA = "certdata.txt"
 PKIDIR = DESTDIR + "/etc/pki"
 SSLDIR = DESTDIR + "/etc/ssl"
@@ -66,7 +66,8 @@ KEYSTORE = JAVADIR + "/cacerts"
 NSSDB = PKIDIR + "/nssdb"
 LOCALDIR = SSLDIR + "/local"
 OLDCERTDATA = SSLDIR + "/" + CERTDATA
-MOZILLA_CA_ROOT = CONFIGDIR + "/mozilla-ca-root.pem"
+LIBEXECDIR = "/usr/libexec/ca-tools"
+MOZILLA_CA_ROOT = LIBEXECDIR + "/mozilla-ca-root.pem"
 
 # Where/howto download the certdata.txt file
 SRCHOST = "hg.mozilla.org"
