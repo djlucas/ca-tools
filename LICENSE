@@ -1,7 +1,3 @@
-update-ccadb and add-local-trust are dual licensed under an MIT-like *or* GPLv3
-license.
-
-update-certdata uses much of RedHat's certdata2pem.py code and is liceenced
-only under the GPLv3 License.
+These files are dual licensed under an MIT-like *or* GPLv3 license.
 
 See LICENSE.MIT and LICENSE.GPLv3 for specific use cases.
