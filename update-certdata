@@ -70,7 +70,7 @@ def get_cert_hash(filepath):
 
 def get_trust_value(trustlist):
   # Certs in CCADB will never be distrusted, but left for completeness
-  if trust == 'distrusted':
+  if trust == 'Distrusted':
     trust_ext_oid = "1.3.6.1.4.1.3319.6.10.1"
     trust_ext_value = "0.%06%0a%2b%06%01%04%01%99w%06%0a%01%04 0%1e%06%08%2b%06%01%05%05%07%03%04%06%08%2b%06%01%05%05%07%03%01%06%08%2b%06%01%05%05%07%03%03"
   else:
@@ -123,7 +123,7 @@ def write_p11_file(srcpem,trust_oid,trust_value,trust,svr_dt_val,eml_dt_val):
   label = get_p11_label(srcpem)
   with open(srcpem, 'r') as file:
     srcpem_text = file.read()
-  print("\nWriting anchor: %s\n  Label: %s\n  Keyhash: %s\n  Trust: %s\n" % (filepath, label, keyhash, trust.replace("satrust", "Server Auth").replace("smtrust", "E-mail").replace("cstrust", "Code Signing").replace("distrusted", "Distrusted").replace(",", ", ")))
+  print("\nWriting anchor: %s\n  Label: %s\n  Keyhash: %s\n  Trust: %s\n" % (filepath, label, keyhash, trust.replace("satrust", "Server Auth").replace("smtrust", "E-mail").replace("cstrust", "Code Signing").replace(",", ", ")))
   writep11 = open(filepath, 'w')
   writep11.write("[p11-kit-object-v1]\n")
   writep11.write("label: \"" + label + "\"\n")
@@ -282,7 +282,7 @@ with open(CERTDATA) as certdata_file:
       elif svr_trust_line[2] == "CKT_NSS_MUST_VERIFY_TRUST":
         trust = ""
       elif svr_trust_line[2] == "CKT_NSS_NOT_TRUSTED":
-        trust = "distrusted"
+        trust = "Distrusted"
       else:
         # We have no idea what this is os move on to the next file
         print("Error processing crtificate with hash: %s" % (chash))
@@ -304,7 +304,7 @@ with open(CERTDATA) as certdata_file:
         # Don't do anything
         xtrust = "" # may want to do more here later, so left it in with an effective noop
       elif eml_trust_line[2] == "CKT_NSS_NOT_TRUSTED":
-        trust = "distrusted"
+        trust = "Distrusted"
       else:
         # We have no idea what this is os move on to the next file
         print("Error processing crtificate with hash: %s" % (chash))
@@ -326,7 +326,7 @@ with open(CERTDATA) as certdata_file:
         # Don't do anything
         xtrust = "" # may want to do more here later, so left it in with an effective noop
       elif cs_trust_line[2] == "CKT_NSS_NOT_TRUSTED":
-        trust = "distrusted"
+        trust = "Distrusted"
       else:
         # We have no idea what this is os move on to the next file
         print("Error processing crtificate with hash: %s" % (chash))
