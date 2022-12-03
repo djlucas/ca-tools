@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # vim:set et sw=4:
 #
-# update-ccadb - download CCADB and apply to system trust
+# update-certdata - download certdata.txt and apply to system trust
 
 # Prints extraneous debuging info and sest DESTDIR to './dest' by default
 debug = False
