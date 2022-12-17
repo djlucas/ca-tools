@@ -197,6 +197,41 @@ def write_p11_file(srcpem,trust_oid,trust_value,trust):
   writep11.write(re.sub(r"\n", "\n#", (re.sub(r"^", '#', openssl_text))) + "\n")
   return 0;
 
+def write_openssl_store():
+  # Create OpenSSL Trusted store
+  print("Extracting OpenSSL certificates to:\n%s..." % (CERTDIR), end='')
+  create_OTS = [TRUST, "extract", "--filter=ca-anchors", "--format=openssl-directory", "--overwrite", "--comment", CERTDIR]
+  subprocess.run(create_OTS, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+  print("Done!")
+
+def write_gnutls_bundle():
+  # Create GNUTLS bundle file
+  print("Extracting GNUTLS server auth certificates to:\n%s..." % (SABUNDLE), end='')
+  create_GBF = [TRUST, "extract", "--filter=ca-anchors", "--format=pem-bundle", "--purpose", "server-auth", "--overwrite", "--comment", SABUNDLE]
+  subprocess.run(create_GBF, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+  print("Done!")
+
+def write_gnutls_smime():
+  # Create GNUTLS S-Mime bundle
+  print("Extracting GNUTLS S-Mime certificates to:\n%s..." % (SMBUNDLE), end='')
+  create_GSM = [TRUST, "extract", "--filter=ca-anchors", "--format=pem-bundle", "--purpose", "email", "--overwrite", "--comment", SMBUNDLE]
+  subprocess.run(create_GSM, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+  print("Done!")
+
+def write_gnutls_cs():
+  # Create GNUTLS Code Signing bundle
+  print("Extracting GNUTLS code signing certificates to:\n%s..." % (CSBUNDLE), end='')
+  create_GCS = [TRUST, "extract", "--filter=ca-anchors", "--format=pem-bundle", "--purpose", "code-signing", "--overwrite", "--comment", CSBUNDLE]
+  subprocess.run(create_GCS, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+  print("Done!")
+
+def write_java_cacerts():
+  # Create Java certificate store
+  print("Extracting Java cacerts (JKS) to:\n%s..." % (KEYSTORE), end='')
+  create_JKS = [TRUST, "extract", "--filter=ca-anchors", "--format=java-cacerts", "--purpose", "server-auth", "--overwrite", "--comment", KEYSTORE]
+  subprocess.run(create_JKS, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+  print("Done!")
+
 if debug == True:
   print("Temporary directory is: %s" % (TEMPDIR))
 safile,smfile,csfile = download_ccadb()
@@ -285,35 +320,12 @@ anchorlist_write.close()
 # Only create the bundles if on a real system, else the generated files
 # will use the real trust directory, not our newly created one
 if DESTDIR == '':
-  # Create OpenSSL trust store
-  print("Extracting OpenSSL certificates to:\n%s..." % (CERTDIR), end='')
-  create_OTS = [TRUST, "extract", "--filter=ca-anchors", "--format=openssl-directory", "--overwrite", "--comment", CERTDIR]
-  subprocess.run(create_OTS, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-  print("Done!")
-
-  # Create GNUTLS bundle file
-  print("Extracting GNUTLS server auth certificates to:\n%s..." % (SABUNDLE), end='')
-  create_GBF = [TRUST, "extract", "--filter=ca-anchors", "--format=pem-bundle", "--purpose", "server-auth", "--overwrite", "--comment", SABUNDLE]
-  subprocess.run(create_GBF, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-  print("Done!")
-
-  # Create GNUTLS S-Mime bundle
-  print("Extracting GNUTLS S-Mime certificates to:\n%s..." % (SMBUNDLE), end='')
-  create_GSM = [TRUST, "extract", "--filter=ca-anchors", "--format=pem-bundle", "--purpose", "email", "--overwrite", "--comment", SMBUNDLE]
-  subprocess.run(create_GSM, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-  print("Done!")
-
-  # Create GNUTLS Code Signing bundle
-  print("Extracting GNUTLS code signing certificates to:\n%s..." % (CSBUNDLE), end='')
-  create_GCS = [TRUST, "extract", "--filter=ca-anchors", "--format=pem-bundle", "--purpose", "code-signing", "--overwrite", "--comment", CSBUNDLE]
-  subprocess.run(create_GCS, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-  print("Done!")
-
-  # Create Java certificate store
-  print("Extracting Java cacerts (JKS) to:\n%s..." % (KEYSTORE), end='')
-  create_JKS = [TRUST, "extract", "--filter=ca-anchors", "--format=java-cacerts", "--purpose", "server-auth", "--overwrite", "--comment", KEYSTORE]
-  subprocess.run(create_JKS, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-  print("Done!")
+  # FIXME: Move to functions for now and eliminate p11-kit requirement.
+  write_openssl_store()
+  write_gnutls_bundle()
+  write_gnutls_smime()
+  write_gnutls_cs()
+  write_java_cacerts()
 
 else:
   print("\n\033[93mWarning\033[0m: Not updating 3rd party bundles when DESTDIR is not empty.\n")
