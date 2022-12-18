@@ -29,7 +29,7 @@ if DESTDIR is None:
 # Do not depend on path, provide them in the config file if not correct
 MD5SUM  = "/usr/bin/md5sum"
 OPENSSL = "/usr/bin/openssl"
-PRINTF = "/usr/bin/printf" # Yeah, I'm cheating here, it works
+PRINTF  = "/usr/bin/printf" # Yeah, I'm cheating here, it works
 TRUST   = "/usr/bin/trust"
 
 # Destination configuration
@@ -327,7 +327,7 @@ with open(CERTDATA) as certdata_file:
       # We have no idea what this is os move on to the next file
       print("Error processing crtificate with hash: %s" % (chash))
       continue
-    
+
     pattern = r'^CKA_TRUST_EMAIL_PROTECTION.*?$'
     eml_trust_line = re.search(pattern, part, flags = re.DOTALL | re.MULTILINE).group(0).split(" ")
     if eml_trust_line[1] == "CK_TRUST":
