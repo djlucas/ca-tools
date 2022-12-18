@@ -72,9 +72,11 @@ def get_trust_value(trustlist):
   # Certs in CCADB will never be distrusted, but left for completeness
   if trust == 'Distrusted':
     trust_ext_oid = "1.3.6.1.4.1.3319.6.10.1"
+    trust_bool = "false"
     trust_ext_value = "0.%06%0a%2b%06%01%04%01%99w%06%0a%01%04 0%1e%06%08%2b%06%01%05%05%07%03%04%06%08%2b%06%01%05%05%07%03%01%06%08%2b%06%01%05%05%07%03%03"
   else:
     trust_ext_oid = "2.5.29.37"
+    trust_bool = "true"
     if trust == 'satrust':
       trust_ext_value = "0%16%06%03U%1d%25%01%01%ff%04%0c0%0a%06%08%2b%06%01%05%05%07%03%01"
     if trust == 'satrust,smtrust':
@@ -91,7 +93,7 @@ def get_trust_value(trustlist):
       trust_ext_value = "0%16%06%03U%1d%25%01%01%ff%04%0c0%0a%06%08%2b%06%01%05%05%07%03%03"
     if trust == '':
       trust_ext_value = "0%18%06%03U%1d%25%01%01%ff%04%0e0%0c%06%0a%2b%06%01%04%01%99w%06%0a%10"
-  return trust_ext_oid,trust_ext_value;
+  return trust_ext_oid,trust_ext_value,trust_bool;
 
 def get_p11_label(srcpem):
   ostcmd = [OPENSSL, "x509", "-in", srcpem, "--noout", "-text"]
@@ -112,7 +114,7 @@ def get_p11_label(srcpem):
     label = re.sub(",.*$", "", labelrex.group(0).replace("O=", ""))
   return label;
 
-def write_p11_file(srcpem,trust_oid,trust_value,trust,svr_dt_val,eml_dt_val):
+def write_p11_file(srcpem,label,trust_oid,trust_value,trust_bool,trust,svr_dt_val,eml_dt_val):
   os.makedirs(TEMPDIR + "/anchors", mode = 0o755, exist_ok = True)
   ostcmd = [OPENSSL, "x509", "-in", srcpem, "--noout", "-text"]
   openssl_text = subprocess.check_output(ostcmd).decode('utf-8').strip()
@@ -120,7 +122,6 @@ def write_p11_file(srcpem,trust_oid,trust_value,trust,svr_dt_val,eml_dt_val):
   openssl_key = subprocess.check_output(oskcmd).decode('utf-8').strip()
   keyhash = get_cert_hash(srcpem)
   filepath = ANCHORDIR + "/" + keyhash + ".p11-kit"
-  label = get_p11_label(srcpem)
   with open(srcpem, 'r') as file:
     srcpem_text = file.read()
   print("\nWriting anchor: %s\n  Label: %s\n  Keyhash: %s\n  Trust: %s\n" % (filepath, label, keyhash, trust.replace("satrust", "Server Auth").replace("smtrust", "E-mail").replace("cstrust", "Code Signing").replace(",", ", ")))
@@ -134,14 +135,16 @@ def write_p11_file(srcpem,trust_oid,trust_value,trust,svr_dt_val,eml_dt_val):
   writep11.write(openssl_key + "\n\n")
   writep11.write("[p11-kit-object-v1]\n")
   writep11.write("label: \"" + label + "\"\n")
-  # Note: always trusted when using certdata.txt
-  writep11.write("trusted: true\n")
+  if trust_bool == "true":
+    writep11.write("trusted: true\n")
+  else:
+    writep11.write("x-distrusted: true\n")
   # Note: nss-mozilla-ca-policy is always true when using certdata.txt
   writep11.write("nss-mozilla-ca-policy: true\n")
   writep11.write("modifiable: false\n")
   writep11.write("nss-server-distrust-after: \"" + svr_dt_val + "\"\n")
   writep11.write("nss-email-distrust-after: \"" + eml_dt_val + "\"\n")
-  writep11.write(srcpem_text + "\n")
+  writep11.write(srcpem_text)
   writep11.write(re.sub(r"\n", "\n#", (re.sub(r"^", '#', openssl_text))) + "\n")
   return 0;
 
@@ -369,8 +372,16 @@ with open(CERTDATA) as certdata_file:
       print("Error processing crtificate with hash: %s" % (chash))
       continue
 
-    trust_oid,trust_value = get_trust_value(trust)
-    write_p11_file(certtemp.name,trust_oid,trust_value,trust,svr_dt_val,eml_dt_val)
+    # Label
+    pattern = r'^CKA_LABEL.*?$'
+    label_line = re.search(pattern, part, flags = re.DOTALL | re.MULTILINE).group(0).split('"')
+    label = label_line[1]
+    if label == "":
+      print("GETTING LABEL FROM PEM\n")
+      label = get_p11_label(srcpem)
+
+    trust_oid,trust_value,trust_bool = get_trust_value(trust)
+    write_p11_file(certtemp.name,label,trust_oid,trust_value,trust_bool,trust,svr_dt_val,eml_dt_val)
 
 # Process any local pem files
 for pem in os.scandir(LOCALDIR):
