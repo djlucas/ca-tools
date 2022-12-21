@@ -50,7 +50,7 @@ LIBEXECDIR = "/usr/libexec/ca-tools"
 CERTDATA   = SSLDIR + "/certdata.txt"
 MOZCA      = LIBEXECDIR + "/mozilla-ca-root.pem"
 SRCHOST = "hg.mozilla.org"
-SRCURL = "https://" + SRCHOST + "/releases/mozilla-release/raw-file/default/security/nss/lib/ckfw/builtins/certdata.txt"
+SRCURL = "https://" + SRCHOST + "/projects/nss/raw-file/tip/lib/ckfw/builtins/certdata.txt"
 SRCDAT = SRCURL.replace("raw-file", "log")
 PROXY = ''
 
@@ -266,7 +266,8 @@ with open(CERTDATA) as certdata_file:
     writetemp.write("\n-----END CERTIFICATE-----\n")
     writetemp.close()
     chash = get_cert_hash(certtemp.name)
-    
+
+    svr_distrust = "false"
     pattern = r'^CKA_NSS_SERVER_DISTRUST_AFTER.*?$'
     svr_dt_line = re.search(pattern, part, flags = re.DOTALL | re.MULTILINE)
     if not svr_dt_line is None:
@@ -281,6 +282,15 @@ with open(CERTDATA) as certdata_file:
         b64_sdump_cmd = [PRINTF, svr_dt_mlv_str]
         svr_dt_mlv_data = subprocess.run(b64_sdump_cmd, stdout=subprocess.PIPE).stdout
         svr_dt_val = str(svr_dt_mlv_data).replace("'", "").replace('b', '')
+        # FIXME - Remove after p11-kit brakage is fixed
+        # Set Distrusted if past the nss-server-distrust-after date
+        if svr_dt_val != "%00":
+          svr_dt_date  = svr_dt_val[:6]
+          today_date = datetime.datetime.today().strftime('%y%m%d')
+          if today_date > svr_dt_date:
+            expdate = "20" + svr_dt_val[:2] + "-" + svr_dt_val[2:4] + "-" + svr_dt_val[4:6]
+            print("The following cetificate is dustrsted for server auth after %s:" % (expdate))
+            svr_distrust = "true"
       else:
         # We have no idea what this is so move on to the next file
         print("Error processing crtificate with hash: %s" % (chash))
@@ -288,6 +298,7 @@ with open(CERTDATA) as certdata_file:
     else:
       svr_dt_val = "%00"
 
+    eml_distrust = "false"
     pattern = r'^CKA_NSS_EMAIL_DISTRUST_AFTER.*?$'
     eml_dt_line = re.search(pattern, part, flags = re.DOTALL | re.MULTILINE)
     if not eml_dt_line is None:
@@ -302,6 +313,15 @@ with open(CERTDATA) as certdata_file:
         b64_edump_cmd = [PRINTF, eml_dt_mlv_str]
         eml_dt_mlv_data = subprocess.run(b64_edump_cmd, stdout=subprocess.PIPE).stdout
         eml_dt_val = str(eml_dt_mlv_data).replace("'", "").replace('b', '')
+        # FIXME - Remove after p11-kit breakage is fixed
+        # Set Distrusted if past the nss-email-distrust-after date
+        if eml_dt_val != "%00":
+          eml_dt_date  = svr_dt_val[:6]
+          today_date = datetime.datetime.today().strftime('%y%m%d')
+          if today_date > eml_dt_date:
+            expdate = "20" + eml_dt_val[:2] + "-" + eml_dt_val[2:4] + "-" + eml_dt_val[4:6]
+            print("The following cetificate is dustrsted for email auth after %s:" % (expdate))
+            eml_distrust = "true"
       else:
         # We have no idea what this is os move on to the next file
         print("Error processing crtificate with hash: %s" % (chash))
@@ -312,7 +332,10 @@ with open(CERTDATA) as certdata_file:
     trust = ""
     pattern = r'^CKA_TRUST_SERVER_AUTH.*?$'
     svr_trust_line = re.search(pattern, part, flags = re.DOTALL | re.MULTILINE).group(0).split(" ")
-    if svr_trust_line[1] == "CK_TRUST":
+    # FIXME - Best we can do for now
+    if svr_distrust == "true":
+      trust = "Distrusted"
+    elif svr_trust_line[1] == "CK_TRUST":
       if svr_trust_line[2] == "CKT_NSS_TRUSTED_DELEGATOR":
         trust = "satrust"
       elif svr_trust_line[2] == "CKT_NSS_MUST_VERIFY_TRUST":
@@ -327,10 +350,13 @@ with open(CERTDATA) as certdata_file:
       # We have no idea what this is os move on to the next file
       print("Error processing crtificate with hash: %s" % (chash))
       continue
-
+    
     pattern = r'^CKA_TRUST_EMAIL_PROTECTION.*?$'
     eml_trust_line = re.search(pattern, part, flags = re.DOTALL | re.MULTILINE).group(0).split(" ")
-    if eml_trust_line[1] == "CK_TRUST":
+    # FIXME - Best we can do for now
+    if eml_distrust == "true":
+      trust = "Distrusted"
+    elif eml_trust_line[1] == "CK_TRUST":
       if eml_trust_line[2] == "CKT_NSS_TRUSTED_DELEGATOR":
         if trust == "":
           trust = "smtrust"
